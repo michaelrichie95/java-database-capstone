@@ -7,8 +7,8 @@
 
 ### Table: appointments
 - appointment_id: INT, Primary Key, Auto Increment
-- doctor_id: INT, Foreign Key (doctor_id) REFERENCES doctors(doctor_id)
-- appointment_patient_id: INT, Foreign Key (patient_id) REFERENCES patients(patient_id)
+- appointment_doctor: INT, Foreign Key (doctor_id) REFERENCES doctors(doctor_id)
+- appointment_patient: INT, Foreign Key (patient_id) REFERENCES patients(patient_id)
 - appointment_time: DATETIME, Not Null
 - appointment_status: INT (0 = Scheduled, 1 = Completed)
 
@@ -19,6 +19,10 @@
 - doctor_email: VARCHAR(100), Unique, Not Null
 - doctor_password: VARCHAR(255), Not Null
 - doctor_phone: VARCHAR(20), Nullable
+
+### Table: doctor_available_times
+- doctor_available_times_doctor_id: INT, Foreign Key (doctor_id) REFERENCES doctors(doctor_id)
+- available_times
 
 ### Table: patients
 - patient_id: INT, Primary Key, Auto Increment
