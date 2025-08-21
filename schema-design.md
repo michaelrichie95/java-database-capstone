@@ -8,7 +8,7 @@
 ### Table: appointments
 - appointment_id: INT, Primary Key, Auto Increment
 - doctor_id: INT, Foreign Key (doctor_id) REFERENCES doctors(doctor_id)
-- patient_id: INT, Foreign Key (patients_id) REFERENCES patients(patients_id)
+- appointment_patient_id: INT, Foreign Key (patient_id) REFERENCES patients(patient_id)
 - appointment_time: DATETIME, Not Null
 - appointment_status: INT (0 = Scheduled, 1 = Completed)
 
