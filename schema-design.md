@@ -2,8 +2,8 @@
 
 ### Table: admin
 - admin_id: INT, Primary Key, Auto Increment
-- username: VARCHAR(20), Unique, Not Null
-- password: VARCHAR(255), Not Null
+- admin_username: VARCHAR(20), Unique, Not Null
+- admin_password: VARCHAR(255), Not Null
 
 ### Table: appointments
 - appointment_id: INT, Primary Key, Auto Increment
