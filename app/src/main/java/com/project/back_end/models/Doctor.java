@@ -17,7 +17,6 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 @Entity
-@Table(name = "doctor")
 public class Doctor {
 
     @Id
@@ -42,7 +41,7 @@ public class Doctor {
     private String doctor_password;
 
     @NotNull(message = "Phone number cannot be null")
-    @Pattern(regexp = "^[0-9]{10}$")
+    @Pattern(regexp = "\\d{10}")
     private String doctor_phone;
 
     @ElementCollection
