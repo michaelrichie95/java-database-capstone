@@ -21,8 +21,8 @@
 - doctor_phone: VARCHAR(20), Nullable
 
 ### Table: doctor_available_times
-- doctor_available_times_doctor_id: INT, Foreign Key (doctor_id) REFERENCES doctors(doctor_id)
-- available_times
+- available_times_doctor: INT, Foreign Key (doctor_id) REFERENCES doctors(doctor_id)
+- available_times: VARCHAR(20), Not Null
 
 ### Table: patients
 - patient_id: INT, Primary Key, Auto Increment
