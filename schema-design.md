@@ -2,52 +2,39 @@
 
 ### Table: admin
 - admin_id: INT, Primary Key, Auto Increment
-- username: VARCHAR(20), Unique, Not Null
-- password_hash: VARCHAR(255), Not Null
-- email: VARCHAR(100), Unique, Not Null
-- last_login: DATETIME, Nullable
+- admin_username: VARCHAR(20), Unique, Not Null
+- admin_password: VARCHAR(255), Not Null
 
 ### Table: appointments
 - appointment_id: INT, Primary Key, Auto Increment
-- doctor_id: INT, Foreign Key → doctors(id)
-- patient_id: INT, Foreign Key → patients(id)
+- appointment_doctor: INT, Foreign Key → doctors(id)
+- appointment_patient: INT, Foreign Key → patients(id)
 - appointment_time: DATETIME, Not Null
-- status: INT (0 = Scheduled, 1 = Completed)
+- appointment_status: INT (0 = Scheduled, 1 = Completed)
 
 ### Table: doctors
 - doctor_id: INT, Primary Key, Auto Increment
-- first_name: VARCHAR(20), Not Null
-- last_name: VARCHAR(20), Not Null
-- email: VARCHAR(100), Unique, Not Null
-- phone_number: VARCHAR(20), Nullable
-- specialization: VARCHAR(30), Not Null
-- license_number: VARCHAR(20), Unique, Nullable
-- status: INT (0 = Inactive, 1 = Active)
-- available_start_time: TIME, Nullable
-- available_end_time: TIME, Nullable
+- doctor_name: VARCHAR(100), Not Null
+- doctor_specialty: VARCHAR(50), Not Null
+- doctor_email: VARCHAR(100), Unique, Not Null
+- doctor_password: VARCHAR(255), Not Null
+- doctor_phone: VARCHAR(20), Nullable
 
 ### Table: patients
 - patient_id: INT, Primary Key, Auto Increment
-- first_name: VARCHAR(20), Not Null
-- last_name: VARCHAR(20), Not Null
-- email: VARCHAR(100), Unique, Nullable
-- phone_number: VARCHAR(20), Nullable
-- date_of_birth: DATE, Nullable
-- gender: ENUM('male', 'female', 'N/A'), Nullable
-- address: VARCHAR(100), Nullable
+- patient_name: VARCHAR(100), Not Null
+- patient_email: VARCHAR(100), Unique, Nullable
+- patient_password: VARCHAR(255), Not Null
+- patient_phone: VARCHAR(20), Nullable
+- patient_address: VARCHAR(255), Nullable
 
 ### Collection: prescriptions
 ```json
 {
-  "_id": "ObjectId('64abc123456')",
-  "patientName": "John Smith",
-  "appointmentId": 51,
+  "prescription_id": "ObjectId('64abc123456')",
+  "patient_name": "John Smith",
+  "appointment_id": 51,
   "medication": "Paracetamol",
   "dosage": "500mg",
-  "doctorNotes": "Take 1 tablet every 6 hours.",
-  "refillCount": 2,
-  "pharmacy": {
-    "name": "Walgreens SF",
-    "location": "Market Street"
-  }
+  "doctorNotes": "Take 1 tablet every 6 hours."
 }
