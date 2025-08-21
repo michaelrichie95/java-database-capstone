@@ -14,11 +14,11 @@
 
 ### Table: doctors
 - doctor_id: INT, Primary Key, Auto Increment
-- doctor_name: VARCHAR(100), Not Null
-- doctor_specialty: VARCHAR(50), Not Null
-- doctor_email: VARCHAR(100), Unique, Not Null
-- doctor_password: VARCHAR(255), Not Null
-- doctor_phone: VARCHAR(20), Nullable
+- name: VARCHAR(100), Not Null
+- specialty: VARCHAR(50), Not Null
+- email: VARCHAR(100), Unique, Not Null
+- password: VARCHAR(255), Not Null
+- phone: VARCHAR(20), Nullable
 
 ### Table: patients
 - patient_id: INT, Primary Key, Auto Increment
