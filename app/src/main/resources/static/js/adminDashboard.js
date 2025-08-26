@@ -1,3 +1,109 @@
+import { openModal } from '../components/modals.js';
+import { getDoctors, filterDoctors, saveDoctor } from './services/doctorServices.js';
+import { createDoctorCard } from './components/doctorCard.js';
+
+const addDoctorBtn = document.getElementById('addDocBtn');
+if (addDoctorBtn) {
+  addDoctorBtn.addEventListener('click', () => openModal('addDoctor'));
+}
+
+window.addEventListener('DOMContentLoaded', loadDoctorCards);
+
+export async function loadDoctorCards() {
+  try {
+    const contentDiv = document.getElementById('content');
+    contentDiv.innerHTML = '';
+
+    const doctors = await getDoctors();
+
+    if (!doctors || doctors.length === 0) {
+      contentDiv.innerHTML = '<p>No doctors found.</p>';
+      return;
+    }
+
+    renderDoctorCards(doctors);
+  } catch (error) {
+    console.error('Error loading doctors:', error);
+    alert('Failed to load doctors. Please try again.');
+  }
+}
+
+export function renderDoctorCards(doctors) {
+  const contentDiv = document.getElementById('content');
+  contentDiv.innerHTML = '';
+
+  doctors.forEach(doctor => {
+    const card = createDoctorCard(doctor);
+    contentDiv.appendChild(card);
+  });
+}
+
+const searchBar = document.getElementById('searchBar');
+const filterTime = document.getElementById('filterTime');
+const filterSpecialty = document.getElementById('filterSpecialty');
+
+if (searchBar) searchBar.addEventListener('input', filterDoctorsOnChange);
+if (filterTime) filterTime.addEventListener('change', filterDoctorsOnChange);
+if (filterSpecialty) filterSpecialty.addEventListener('change', filterDoctorsOnChange);
+
+export async function filterDoctorsOnChange() {
+  try {
+    const name = searchBar?.value.trim() || null;
+    const time = filterTime?.value || null;
+    const specialty = filterSpecialty?.value || null;
+
+    const result = await filterDoctors(name, time, specialty);
+    const doctors = result.doctors || [];
+
+    if (doctors.length === 0) {
+      document.getElementById('content').innerHTML = '<p>No doctors found with the given filters.</p>';
+      return;
+    }
+
+    renderDoctorCards(doctors);
+  } catch (error) {
+    console.error('Error filtering doctors:', error);
+    alert('Failed to filter doctors. Please try again.');
+  }
+}
+
+export async function adminAddDoctor(event) {
+  event.preventDefault();
+
+  const name = document.getElementById('doctorName').value.trim();
+  const email = document.getElementById('doctorEmail').value.trim();
+  const phone = document.getElementById('doctorPhone').value.trim();
+  const password = document.getElementById('doctorPassword').value;
+  const specialty = document.getElementById('doctorSpecialty').value.trim();
+
+  const availabilityCheckboxes = document.querySelectorAll("input[name='availability']:checked");
+  const availableTimes = Array.from(availabilityCheckboxes).map(cb => cb.value);
+
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('Admin token not found. Please log in.');
+    return;
+  }
+
+  const doctor = { name, email, phone, password, specialty, availableTimes };
+
+  try {
+    const response = await saveDoctor(doctor, token);
+
+    if (response.success) {
+      alert('Doctor added successfully!');
+      openModal('addDoctor', true);
+      loadDoctorCards();
+    } else {
+      alert('Failed to add doctor: ' + response.message);
+    }
+  } catch (error) {
+    console.error('Error adding doctor:', error);
+    alert('Error occurred while adding doctor. Please try again.');
+  }
+}
+
+
 /*
   This script handles the admin dashboard functionality for managing doctors:
   - Loads all doctor cards
