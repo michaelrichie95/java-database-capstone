@@ -1,6 +1,194 @@
 package com.project.back_end.services;
 
+import com.project.back_end.model.Appointment;
+import com.project.back_end.model.Doctor;
+import com.project.back_end.model.Login;
+import com.project.back_end.repo.AppointmentRepository;
+import com.project.back_end.repo.DoctorRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
 public class DoctorService {
+
+    private final DoctorRepository doctorRepository;
+    private final AppointmentRepository appointmentRepository;
+    private final TokenService tokenService;
+
+    public DoctorService(DoctorRepository doctorRepository,
+                         AppointmentRepository appointmentRepository,
+                         TokenService tokenService) {
+        this.doctorRepository = doctorRepository;
+        this.appointmentRepository = appointmentRepository;
+        this.tokenService = tokenService;
+    }
+
+    // ---------------------- Doctor Availability ----------------------
+
+    @Transactional(readOnly = true)
+    public List<String> getDoctorAvailability(Long doctorId, LocalDate date) {
+        Optional<Doctor> doctorOpt = doctorRepository.findById(doctorId);
+        if (doctorOpt.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Doctor doctor = doctorOpt.get();
+        List<Appointment> appointments =
+                appointmentRepository.findByDoctorIdAndAppointmentTimeBetween(
+                        doctorId,
+                        date.atStartOfDay(),
+                        date.plusDays(1).atStartOfDay()
+                );
+
+        Set<LocalTime> bookedTimes = appointments.stream()
+                .map(app -> app.getAppointmentTime().toLocalTime())
+                .collect(Collectors.toSet());
+
+        return doctor.getAvailableTimes().stream()
+                .filter(time -> !bookedTimes.contains(time))
+                .map(LocalTime::toString)
+                .collect(Collectors.toList());
+    }
+
+    // ---------------------- Save Doctor ----------------------
+
+    public int saveDoctor(Doctor doctor) {
+        try {
+            if (doctorRepository.findByEmail(doctor.getEmail()).isPresent()) {
+                return -1; // doctor already exists
+            }
+            doctorRepository.save(doctor);
+            return 1;
+        } catch (Exception e) {
+            return 0; // internal error
+        }
+    }
+
+    // ---------------------- Update Doctor ----------------------
+
+    public int updateDoctor(Doctor doctor) {
+        try {
+            if (doctor.getId() == null || !doctorRepository.existsById(doctor.getId())) {
+                return -1; // doctor not found
+            }
+            doctorRepository.save(doctor);
+            return 1;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    // ---------------------- Get All Doctors ----------------------
+
+    @Transactional(readOnly = true)
+    public List<Doctor> getDoctors() {
+        return doctorRepository.findAll();
+    }
+
+    // ---------------------- Delete Doctor ----------------------
+
+    public int deleteDoctor(long id) {
+        try {
+            Optional<Doctor> doctorOpt = doctorRepository.findById(id);
+            if (doctorOpt.isEmpty()) {
+                return -1;
+            }
+            appointmentRepository.deleteAllByDoctorId(id);
+            doctorRepository.deleteById(id);
+            return 1;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    // ---------------------- Validate Doctor Login ----------------------
+
+    public ResponseEntity<Map<String, String>> validateDoctor(Login login) {
+        Map<String, String> response = new HashMap<>();
+        Optional<Doctor> doctorOpt = doctorRepository.findByEmail(login.getEmail());
+
+        if (doctorOpt.isEmpty() || !doctorOpt.get().getPassword().equals(login.getPassword())) {
+            response.put("message", "Invalid email or password");
+            return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+        }
+
+        String token = tokenService.generateToken(doctorOpt.get().getId(), "DOCTOR");
+        response.put("token", token);
+        response.put("message", "Login successful");
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    // ---------------------- Find Doctor By Name ----------------------
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> findDoctorByName(String name) {
+        Map<String, Object> result = new HashMap<>();
+        List<Doctor> doctors = doctorRepository.findByNameLike("%" + name + "%");
+        result.put("doctors", doctors);
+        return result;
+    }
+
+    // ---------------------- Filter Doctors ----------------------
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> filterDoctorsByNameSpecilityandTime(String name, String specialty, String amOrPm) {
+        List<Doctor> doctors = doctorRepository.findByNameContainingIgnoreCaseAndSpecialtyIgnoreCase(name, specialty);
+        List<Doctor> filtered = filterDoctorByTime(doctors, amOrPm);
+        return Map.of("doctors", filtered);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> filterDoctorByNameAndTime(String name, String amOrPm) {
+        List<Doctor> doctors = doctorRepository.findByNameLike("%" + name + "%");
+        List<Doctor> filtered = filterDoctorByTime(doctors, amOrPm);
+        return Map.of("doctors", filtered);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> filterDoctorByNameAndSpecility(String name, String specialty) {
+        List<Doctor> doctors = doctorRepository.findByNameContainingIgnoreCaseAndSpecialtyIgnoreCase(name, specialty);
+        return Map.of("doctors", doctors);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> filterDoctorByTimeAndSpecility(String specialty, String amOrPm) {
+        List<Doctor> doctors = doctorRepository.findBySpecialtyIgnoreCase(specialty);
+        List<Doctor> filtered = filterDoctorByTime(doctors, amOrPm);
+        return Map.of("doctors", filtered);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> filterDoctorBySpecility(String specialty) {
+        List<Doctor> doctors = doctorRepository.findBySpecialtyIgnoreCase(specialty);
+        return Map.of("doctors", doctors);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> filterDoctorsByTime(String amOrPm) {
+        List<Doctor> doctors = doctorRepository.findAll();
+        List<Doctor> filtered = filterDoctorByTime(doctors, amOrPm);
+        return Map.of("doctors", filtered);
+    }
+
+    // ---------------------- Helper Method ----------------------
+
+    private List<Doctor> filterDoctorByTime(List<Doctor> doctors, String amOrPm) {
+        return doctors.stream().filter(doctor ->
+                doctor.getAvailableTimes().stream().anyMatch(time ->
+                        ("AM".equalsIgnoreCase(amOrPm) && time.isBefore(LocalTime.NOON)) ||
+                        ("PM".equalsIgnoreCase(amOrPm) && !time.isBefore(LocalTime.NOON))
+                )
+        ).collect(Collectors.toList());
+    }
+}
+
 
 // 1. **Add @Service Annotation**:
 //    - This class should be annotated with `@Service` to indicate that it is a service layer class.
@@ -87,6 +275,3 @@ public class DoctorService {
 //    - Filters all doctors based on their availability during a specific time period (AM/PM).
 //    - The method checks all doctors' available times and returns those available during the specified time period.
 //    - Instruction: Ensure proper filtering logic to handle AM/PM time periods.
-
-   
-}

@@ -1,6 +1,99 @@
 package com.project.back_end.services;
 
+import com.project.back_end.model.Admin;
+import com.project.back_end.model.Doctor;
+import com.project.back_end.model.Patient;
+import com.project.back_end.repo.AdminRepository;
+import com.project.back_end.repo.DoctorRepository;
+import com.project.back_end.repo.PatientRepository;
+
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.Claims;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import javax.crypto.SecretKey;
+import java.util.Date;
+
+@Component
 public class TokenService {
+
+    private final AdminRepository adminRepository;
+    private final DoctorRepository doctorRepository;
+    private final PatientRepository patientRepository;
+
+    @Value("${jwt.secret}")
+    private String jwtSecret;
+
+    private static final long EXPIRATION_TIME = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+
+    public TokenService(AdminRepository adminRepository,
+                        DoctorRepository doctorRepository,
+                        PatientRepository patientRepository) {
+        this.adminRepository = adminRepository;
+        this.doctorRepository = doctorRepository;
+        this.patientRepository = patientRepository;
+    }
+
+    // ---------------------- Get Signing Key ----------------------
+    private SecretKey getSigningKey() {
+        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
+    }
+
+    // ---------------------- Generate Token ----------------------
+    public String generateToken(String identifier) {
+        return Jwts.builder()
+                .setSubject(identifier)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    // ---------------------- Extract Identifier ----------------------
+    public String extractIdentifier(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            return claims.getSubject();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // ---------------------- Validate Token ----------------------
+    public boolean validateToken(String token, String userType) {
+        try {
+            String identifier = extractIdentifier(token);
+            if (identifier == null) return false;
+
+            switch (userType.toLowerCase()) {
+                case "admin":
+                    Admin admin = adminRepository.findByUsername(identifier);
+                    return admin != null;
+                case "doctor":
+                    Doctor doctor = doctorRepository.findByEmail(identifier);
+                    return doctor != null;
+                case "patient":
+                    Patient patient = patientRepository.findByEmail(identifier);
+                    return patient != null;
+                default:
+                    return false;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+}
+
 // 1. **@Component Annotation**
 // The @Component annotation marks this class as a Spring component, meaning Spring will manage it as a bean within its application context.
 // This allows the class to be injected into other Spring-managed components (like services or controllers) where it's needed.
@@ -39,5 +132,3 @@ public class TokenService {
 // - The method gracefully handles any errors by returning false if the token is invalid or an exception occurs.
 // This ensures secure access control based on the user's role and their existence in the system.
 
-
-}

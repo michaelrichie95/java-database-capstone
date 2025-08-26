@@ -1,6 +1,159 @@
 package com.project.back_end.services;
 
+import com.project.back_end.DTO.AppointmentDTO;
+import com.project.back_end.model.Appointment;
+import com.project.back_end.model.Patient;
+import com.project.back_end.repo.AppointmentRepository;
+import com.project.back_end.repo.PatientRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
 public class PatientService {
+
+    private final PatientRepository patientRepository;
+    private final AppointmentRepository appointmentRepository;
+    private final TokenService tokenService;
+
+    public PatientService(PatientRepository patientRepository,
+                          AppointmentRepository appointmentRepository,
+                          TokenService tokenService) {
+        this.patientRepository = patientRepository;
+        this.appointmentRepository = appointmentRepository;
+        this.tokenService = tokenService;
+    }
+
+    // ---------------------- Create Patient ----------------------
+    public int createPatient(Patient patient) {
+        try {
+            patientRepository.save(patient);
+            return 1;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+    // ---------------------- Get Patient Appointments ----------------------
+    @Transactional(readOnly = true)
+    public ResponseEntity<Map<String, Object>> getPatientAppointment(Long id, String token) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            String email = tokenService.extractEmail(token);
+            Optional<Patient> patientOpt = patientRepository.findByEmail(email);
+
+            if (patientOpt.isEmpty() || !patientOpt.get().getId().equals(id)) {
+                response.put("message", "Unauthorized access");
+                return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+            }
+
+            List<AppointmentDTO> appointments = appointmentRepository
+                    .findByPatientId(id)
+                    .stream()
+                    .map(AppointmentDTO::new)
+                    .collect(Collectors.toList());
+
+            response.put("appointments", appointments);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (Exception e) {
+            response.put("message", "Error retrieving appointments");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // ---------------------- Filter Appointments by Condition ----------------------
+    @Transactional(readOnly = true)
+    public ResponseEntity<Map<String, Object>> filterByCondition(String condition, Long id) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            int status = "past".equalsIgnoreCase(condition) ? 1 : 0;
+
+            List<AppointmentDTO> appointments = appointmentRepository
+                    .findByPatient_IdAndStatusOrderByAppointmentTimeAsc(id, status)
+                    .stream()
+                    .map(AppointmentDTO::new)
+                    .collect(Collectors.toList());
+
+            response.put("appointments", appointments);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (Exception e) {
+            response.put("message", "Error filtering appointments");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // ---------------------- Filter by Doctor Name ----------------------
+    @Transactional(readOnly = true)
+    public ResponseEntity<Map<String, Object>> filterByDoctor(String name, Long patientId) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            List<AppointmentDTO> appointments = appointmentRepository
+                    .filterByDoctorNameAndPatientId(name, patientId)
+                    .stream()
+                    .map(AppointmentDTO::new)
+                    .collect(Collectors.toList());
+
+            response.put("appointments", appointments);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (Exception e) {
+            response.put("message", "Error filtering by doctor");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // ---------------------- Filter by Doctor and Condition ----------------------
+    @Transactional(readOnly = true)
+    public ResponseEntity<Map<String, Object>> filterByDoctorAndCondition(String condition, String name, long patientId) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            int status = "past".equalsIgnoreCase(condition) ? 1 : 0;
+
+            List<AppointmentDTO> appointments = appointmentRepository
+                    .filterByDoctorNameAndPatientIdAndStatus(name, patientId, status)
+                    .stream()
+                    .map(AppointmentDTO::new)
+                    .collect(Collectors.toList());
+
+            response.put("appointments", appointments);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (Exception e) {
+            response.put("message", "Error filtering by doctor and condition");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // ---------------------- Get Patient Details ----------------------
+    @Transactional(readOnly = true)
+    public ResponseEntity<Map<String, Object>> getPatientDetails(String token) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            String email = tokenService.extractEmail(token);
+            Optional<Patient> patientOpt = patientRepository.findByEmail(email);
+
+            if (patientOpt.isEmpty()) {
+                response.put("message", "Patient not found");
+                return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+            }
+
+            response.put("patient", patientOpt.get());
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (Exception e) {
+            response.put("message", "Error fetching patient details");
+            return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+}
+
 // 1. **Add @Service Annotation**:
 //    - The `@Service` annotation is used to mark this class as a Spring service component. 
 //    - It will be managed by Spring's container and used for business logic related to patients and appointments.
@@ -52,7 +205,3 @@ public class PatientService {
 // 10. **Use of DTOs (Data Transfer Objects)**:
 //    - The service uses `AppointmentDTO` to transfer appointment-related data between layers. This ensures that sensitive or unnecessary data (e.g., password or private patient information) is not exposed in the response.
 //    - Instruction: Ensure that DTOs are used appropriately to limit the exposure of internal data and only send the relevant fields to the client.
-
-
-
-}

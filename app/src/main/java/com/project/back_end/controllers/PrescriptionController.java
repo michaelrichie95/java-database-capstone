@@ -1,6 +1,66 @@
 package com.project.back_end.controllers;
 
+import com.project.back_end.model.Prescription;
+import com.project.back_end.services.PrescriptionService;
+import com.project.back_end.services.Service;
+import com.project.back_end.services.AppointmentService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping("${api.path}prescription")
 public class PrescriptionController {
+
+    private final PrescriptionService prescriptionService;
+    private final Service service;
+    private final AppointmentService appointmentService;
+
+    @Autowired
+    public PrescriptionController(PrescriptionService prescriptionService, Service service, AppointmentService appointmentService) {
+        this.prescriptionService = prescriptionService;
+        this.service = service;
+        this.appointmentService = appointmentService;
+    }
+
+    // ---------------------- Save Prescription ----------------------
+    @PostMapping("/{token}")
+    public ResponseEntity<Map<String, String>> savePrescription(
+            @PathVariable String token,
+            @RequestBody Prescription prescription) {
+
+        // Validate doctor token
+        ResponseEntity<Map<String, String>> tokenValidation = service.validateToken(token, "doctor");
+        if (tokenValidation.getStatusCode() != HttpStatus.OK) {
+            return tokenValidation;
+        }
+
+        // Update appointment status if needed
+        appointmentService.updateAppointmentStatus(prescription.getAppointmentId(), "Prescription Added");
+
+        // Save the prescription
+        return prescriptionService.savePrescription(prescription);
+    }
+
+    // ---------------------- Get Prescription by Appointment ID ----------------------
+    @GetMapping("/{appointmentId}/{token}")
+    public ResponseEntity<?> getPrescription(
+            @PathVariable Long appointmentId,
+            @PathVariable String token) {
+
+        // Validate doctor token
+        ResponseEntity<Map<String, String>> tokenValidation = service.validateToken(token, "doctor");
+        if (tokenValidation.getStatusCode() != HttpStatus.OK) {
+            return tokenValidation;
+        }
+
+        // Fetch prescription for the appointment
+        return prescriptionService.getPrescription(appointmentId);
+    }
+}
     
 // 1. Set Up the Controller Class:
 //    - Annotate the class with `@RestController` to define it as a REST API controller.
@@ -28,6 +88,3 @@ public class PrescriptionController {
 //    - Validates the token for the `"doctor"` role using the shared service.
 //    - If the token is valid, fetches the prescription using the `PrescriptionService`.
 //    - Returns the prescription details or an appropriate error message if validation fails.
-
-
-}
