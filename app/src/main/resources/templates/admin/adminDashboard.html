@@ -1,28 +1,76 @@
 <!-- adminDashboard.html -->
 
-<!-- 
-Step-by-Step Explanation of `adminDashboard.html`
-This file creates the Admin Dashboard interface for managing doctor-related data 
-with search, filter, and modal functionality.
+<!DOCTYPE html>
 
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 
-1. Declare the Document Type
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" th:href="@{/assets/images/logo/logo.png}" />
+  <title> Admin Dashboard
+  </title>
 
-   * Use `<!DOCTYPE html>` to ensure HTML5 standards for consistent rendering across browsers.
+    <link rel="stylesheet" th:href="@{/assets/css/adminDashboard.css}" />
+  <link rel="stylesheet" th:href="@{/assets/css/style.css}" />
 
-2. Begin the HTML Document with Thymeleaf Namespace
+  <script th:src="@{/js/render.js}" defer></script>
+  <script th:src="@{/js/util.js}" defer></script>
 
-   * Add the `<html>` tag with `xmlns:th="http://www.thymeleaf.org"` to allow Thymeleaf-specific attributes in Spring-based apps.
+  <script th:src="@{/js/components/header.js}" defer></script>
+  <script th:src="@{/js/components/footer.js}" defer></script>
+</head>
+<body onload="renderContent()">
 
-3. Head Section – Metadata and Resources
+  <div class="container">
+    <div class="wrapper">
 
-   * Open the `<head>` section for meta info and links to assets and scripts.
+      <div id="header"></div>
 
-4. Set Character Encoding
+      <main class="main-content">
 
-   * Use UTF-8 to support all characters and prevent encoding issues.
+        <input 
+          type="text" 
+          id="searchBar" 
+          placeholder="search by doctor name" 
+        />
 
-5. Set the Favicon
+        <div class="filters">
+          <select id="sortByTime">
+            <option value="">Sort by Time</option>
+            <option value="am">AM</option>
+            <option value="pm">PM</option>
+          </select>
+
+          <select id="filterBySpecialty">
+            <option value="">Filter by Specialty</option>
+            <option value="cardiologist">Cardiologist</option>
+            <option value="neurologist">Dermatologist</option>
+            <option value="neurologist">Neurologist</option>
+            <option value="dentist">Orthopedist</option>
+            <option value="general">Pediatrician</option>
+          </select>
+        </div>
+
+        <div id="content"></div>
+      </main>
+
+      <div id="footer"></div>
+    </div>
+  </div>
+
+  <div id="modal" class="modal">
+    <span id="closeModal" class="close">&times;</span>
+    <div id="modal-body"></div>
+  </div>
+
+  <script type="module" src="../js/services/adminDashboard.js" defer></script>
+  <script type="module" src="../js/components/doctorCard.js" defer></script>
+
+</body>
+</html>
+
+<!--
+    5. Set the Favicon
 
    * Add a favicon for browser tabs using Thymeleaf pathing: 
      `<link rel="icon" type="image/png" th:href="@{/assets/images/logo/logo.png}" />`.
