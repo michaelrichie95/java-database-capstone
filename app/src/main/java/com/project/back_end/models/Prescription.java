@@ -10,11 +10,11 @@ import jakarta.validation.constraints.Size;
 public class Prescription {
 
     @Id
-    private String prescription_id;
+    private String id;
 
     @NotNull(message = "Patient name cannot be null")
     @Size(min = 3, max = 100)
-    private String patient_name;
+    private String name;
 
     @NotNull(message = "Appointment ID cannot be null")
     private Long appointment_id;
@@ -33,8 +33,8 @@ public class Prescription {
     public Prescription() {
     }
 
-    public Prescription(String patient_name, Long appointment_id, String medication, String dosage, String doctor_notes) {
-        this.patient_name = patient_name;
+    public Prescription(String name, Long appointment_id, String medication, String dosage, String doctor_notes) {
+        this.name = name;
         this.appointment_id = appointment_id;
         this.medication = medication;
         this.dosage = dosage;
@@ -42,19 +42,19 @@ public class Prescription {
     }
 
     public String getId() {
-        return prescription_id;
+        return id;
     }
 
-    public void setId(String prescription_id) {
-        this.prescription_id = prescription_id;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getPatientName() {
-        return patient_name;
+        return name;
     }
 
-    public void setPatientName(String patient_name) {
-        this.patient_name = patient_name;
+    public void setPatientName(String name) {
+        this.name = name;
     }
 
     public Long getAppointmentId() {
