@@ -21,80 +21,80 @@ public class Patient {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long patient_id;
+    private Long id;
 
     @NotNull(message = "Name cannot be null")
     @Size(min = 3, max = 100)
-    private String patient_name;
+    private String name;
 
     @NotNull(message = "Email cannot be null")
     @Email
-    private String patient_email;
+    private String email;
 
     @NotNull(message = "Password cannot be null")
     @Size(min = 6)
-    private String patient_password;
+    private String password;
 
     @NotNull(message = "Phone number cannot be null")
     @Pattern(regexp = "\\d{10}")
-    private String patient_phone;
+    private String phone;
 
     @NotNull(message = "Address cannot be null")
     @Size(max = 255)
-    private String patient_address;
+    private String address;
 
     public Patient() {
     }
 
-    public Patient(String patient_name, String patient_email, String patient_password, String patient_phone, String patient_address) {
-        this.patient_name = patient_name;
-        this.patient_email = patient_email;
-        this.patient_password = patient_password;
-        this.patient_phone = patient_phone;
-        this.patient_address = patient_address;
+    public Patient(String name, String email, String password, String phone, String address) {
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.phone = phone;
+        this.address = address;
     }
 
     public Long getId() {
-        return patient_id;
+        return id;
     }
 
-    public void setId(Long patient_id) {
-        this.patient_id = patient_id;
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getName() {
-        return patient_name;
+        return name;
     }
 
-    public void setName(String patient_name) {
-        this.patient_name = patient_name;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getEmail() {
-        return patient_email;
+        return email;
     }
 
-    public void setEmail(String patient_email) {
-        this.patient_email = patient_email;
+    public void setEmail(String email) {
+        this.email = email;
     }
 
-    public void setPassword(String patient_password) {
-        this.patient_password = patient_password;
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public String getPhone() {
-        return patient_phone;
+        return phone;
     }
 
-    public void setPhone(String patient_phone) {
-        this.patient_phone = patient_phone;
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 
     public String getAddress() {
-        return patient_address;
+        return address;
     }
 
-    public void setAddress(String patient_address) {
-        this.patient_address = patient_address;
+    public void setAddress(String address) {
+        this.address = address;
     }
 }
