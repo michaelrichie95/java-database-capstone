@@ -20,85 +20,85 @@ public class Appointment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long appointment_id;
+    private Long id;
 
     @ManyToOne
     @NotNull(message = "Doctor cannot be null")
-    private Doctor appointment_doctor;
+    private Doctor doctor;
 
     @ManyToOne
     @NotNull(message = "Patient cannot be null")
-    private Patient appointment_patient;
+    private Patient patient;
 
     @NotNull(message = "Appointment time cannot be null")
     @Future(message = "Appointment time must be in the future")
-    private LocalDateTime appointment_time;
+    private LocalDateTime time;
 
     @NotNull(message = "Appointment status cannot be null")
-    private int appointment_status; // 0 = scheduled, 1 = completed
+    private int status; // 0 = scheduled, 1 = completed
 
     public Appointment() {
     }
 
-    public Appointment(Doctor appointment_doctor, Patient appointment_patient, LocalDateTime appointment_time, int appointment_status) {
-        this.appointment_doctor = appointment_doctor;
-        this.appointment_patient = appointment_patient;
-        this.appointment_time = appointment_time;
-        this.appointment_status = appointment_status;
+    public Appointment(Doctor doctor, Patient patient, LocalDateTime time, int status) {
+        this.doctor = doctor;
+        this.patient = patient;
+        this.time = time;
+        this.status = status;
     }
 
     @Transient
     public LocalDateTime getEndTime() {
-        return appointment_time.plusHours(1);
+        return time.plusHours(1);
     }
 
     @Transient
     public LocalDate getAppointmentDate() {
-        return appointment_time.toLocalDate();
+        return time.toLocalDate();
     }
 
     @Transient
     public LocalTime getAppointmentTimeOnly() {
-        return appointment_time.toLocalTime();
+        return time.toLocalTime();
     }
 
     public Long getId() {
-        return appointment_id;
+        return id;
     }
 
-    public void setId(Long appointment_id) {
-        this.appointment_id = appointment_id;
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public Doctor getDoctor() {
-        return appointment_doctor;
+        return doctor;
     }
 
-    public void setDoctor(Doctor appointment_doctor) {
-        this.appointment_doctor = appointment_doctor;
+    public void setDoctor(Doctor doctor) {
+        this.doctor = doctor;
     }
 
     public Patient getPatient() {
-        return appointment_patient;
+        return patient;
     }
 
-    public void setPatient(Patient appointment_patient) {
-        this.appointment_patient = appointment_patient;
+    public void setPatient(Patient patient) {
+        this.patient = patient;
     }
 
     public LocalDateTime getAppointmentTime() {
-        return appointment_time;
+        return time;
     }
 
-    public void setAppointmentTime(LocalDateTime appointment_time) {
-        this.appointment_time = appointment_time;
+    public void setAppointmentTime(LocalDateTime time) {
+        this.time = time;
     }
 
     public int getStatus() {
-        return appointment_status;
+        return status;
     }
 
-    public void setStatus(int appointment_status) {
-        this.appointment_status = appointment_status;
+    public void setStatus(int status) {
+        this.status = status;
     }
 }
