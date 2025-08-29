@@ -1,36 +1,37 @@
 ## MySQL Database Design
 
-### Table: admin
-- admin_id: INT, Primary Key, Auto Increment
-- admin_username: VARCHAR(20), Unique, Not Null
-- admin_password: VARCHAR(255), Not Null
-
-### Table: appointments
-- appointment_id: INT, Primary Key, Auto Increment
-- appointment_doctor: INT, Foreign Key (doctor_id) REFERENCES doctors(doctor_id)
-- appointment_patient: INT, Foreign Key (patient_id) REFERENCES patients(patient_id)
-- appointment_time: DATETIME, Not Null
-- appointment_status: INT (0 = Scheduled, 1 = Completed)
+### Table: patients
+- id: INT, Primary Key, Auto Increment
+- name: VARCHAR(50), NOT NULL
+- email: VARCHAR(255), NOT NULL
+- password: VARCHAR(255), NOT NULL
+- phone: VARCHAR(15), NOT NULL
+- address: VARCHAR(255)
 
 ### Table: doctors
-- doctor_id: INT, Primary Key, Auto Increment
-- doctor_name: VARCHAR(100), Not Null
-- doctor_specialty: VARCHAR(50), Not Null
-- doctor_email: VARCHAR(100), Unique, Not Null
-- doctor_password: VARCHAR(255), Not Null
-- doctor_phone: VARCHAR(20), Nullable
+- id: INT, Primary Key, Auto Increment
+- name: VARCHAR(255), NOT NULL
+- speciality: VARCHAR(100), NOT NULL
+- email: VARCHAR(255), NOT NULL
+- password: VARCHAR(255), NOT NULL
+- phone: VARCHAR(15), NOT NULL
+- available_times: Element Collection (List of VARCHAR)
+
+### Table: appointments
+- id: INT, Primary Key, Auto Increment
+- doctor_id: INT, Foreign Key → doctors(id)
+- patient_id: INT, Foreign Key → patients(id)
+- appointment_time: DATETIME, NOT NULL
+- status: INT (0 = Scheduled, 1 = Completed), NOT NULL
+
+### Table: admins
+- id: INT, Primary Key, Auto Increment
+- username: VARCHAR(50), UNIQUE, NOT NULL
+- password: VARCHAR(255), NOT NULL
 
 ### Table: doctor_available_times
-- available_times_doctor: INT, Foreign Key (doctor_id) REFERENCES doctors(doctor_id)
+- id: INT, Foreign Key (doctor_id) REFERENCES doctors(doctor_id)
 - available_times: VARCHAR(20), Not Null
-
-### Table: patients
-- patient_id: INT, Primary Key, Auto Increment
-- patient_name: VARCHAR(100), Not Null
-- patient_email: VARCHAR(100), Unique, Nullable
-- patient_password: VARCHAR(255), Not Null
-- patient_phone: VARCHAR(20), Nullable
-- patient_address: VARCHAR(255), Nullable
 
 ### Collection: prescriptions
 ```json
