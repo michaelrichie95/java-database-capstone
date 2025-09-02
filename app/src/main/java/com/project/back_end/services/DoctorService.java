@@ -1,19 +1,22 @@
 package com.project.back_end.services;
 
-import com.project.back_end.model.Appointment;
-import com.project.back_end.model.Doctor;
-import com.project.back_end.model.Login;
-import com.project.back_end.repo.AppointmentRepository;
-import com.project.back_end.repo.DoctorRepository;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.*;
-import java.util.stream.Collectors;
+import com.project.back_end.DTO.Login;
+import com.project.back_end.models.Appointment;
+import com.project.back_end.models.Doctor;
+import com.project.back_end.repo.AppointmentRepository;
+import com.project.back_end.repo.DoctorRepository;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class DoctorService {
@@ -22,173 +25,218 @@ public class DoctorService {
     private final AppointmentRepository appointmentRepository;
     private final TokenService tokenService;
 
-    public DoctorService(DoctorRepository doctorRepository,
-                         AppointmentRepository appointmentRepository,
-                         TokenService tokenService) {
+    public DoctorService(DoctorRepository doctorRepository, AppointmentRepository appointmentRepository,
+            TokenService tokenService) {
         this.doctorRepository = doctorRepository;
         this.appointmentRepository = appointmentRepository;
         this.tokenService = tokenService;
     }
 
-    // ---------------------- Doctor Availability ----------------------
-
-    @Transactional(readOnly = true)
+    @Transactional
     public List<String> getDoctorAvailability(Long doctorId, LocalDate date) {
-        Optional<Doctor> doctorOpt = doctorRepository.findById(doctorId);
-        if (doctorOpt.isEmpty()) {
-            return Collections.emptyList();
+        Optional<Doctor> doctor = doctorRepository.findById(doctorId);
+
+        if (doctor.isEmpty()) {
+            return List.of("Doctor not found with ID: " + doctorId);
         }
 
-        Doctor doctor = doctorOpt.get();
-        List<Appointment> appointments =
-                appointmentRepository.findByDoctorIdAndAppointmentTimeBetween(
-                        doctorId,
-                        date.atStartOfDay(),
-                        date.plusDays(1).atStartOfDay()
-                );
+        List<String> availableSlots = doctor.get().getAvailableTimes().stream()
+                .map(Object::toString)
+                .collect(Collectors.toList());
 
-        Set<LocalTime> bookedTimes = appointments.stream()
-                .map(app -> app.getAppointmentTime().toLocalTime())
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
+
+        List<Appointment> appointments = appointmentRepository.findByDoctorIdAndAppointmentTimeBetween(doctorId,
+                startOfDay, endOfDay);
+
+        Set<String> bookedSlots = appointments.stream()
+                .map(appt -> {
+                    LocalDateTime start = appt.getAppointmentTime();
+                    LocalDateTime end = start.plusHours(1); 
+                    return formatSlot(start, end); 
+                })
                 .collect(Collectors.toSet());
 
-        return doctor.getAvailableTimes().stream()
-                .filter(time -> !bookedTimes.contains(time))
-                .map(LocalTime::toString)
+        return availableSlots.stream()
+                .filter(slot -> !bookedSlots.contains(slot))
                 .collect(Collectors.toList());
     }
 
-    // ---------------------- Save Doctor ----------------------
+    private String formatSlot(LocalDateTime start, LocalDateTime end) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
+        return start.format(formatter) + "-" + end.format(formatter);
+    }
 
     public int saveDoctor(Doctor doctor) {
+
+        Optional<Doctor> resultOpt = doctorRepository.findFirstByEmail(doctor.getEmail());
+
+        if (resultOpt.isPresent()) {
+            return -1;
+        }
         try {
-            if (doctorRepository.findByEmail(doctor.getEmail()).isPresent()) {
-                return -1; // doctor already exists
-            }
             doctorRepository.save(doctor);
             return 1;
         } catch (Exception e) {
-            return 0; // internal error
+            System.err.println("Error saving doctor: " + e.getMessage());
+            return 0;
         }
-    }
 
-    // ---------------------- Update Doctor ----------------------
+    }
 
     public int updateDoctor(Doctor doctor) {
+        Optional<Doctor> result = doctorRepository.findById(doctor.getId());
+        if (!result.isPresent()) {
+            return -1;
+        }
         try {
-            if (doctor.getId() == null || !doctorRepository.existsById(doctor.getId())) {
-                return -1; // doctor not found
-            }
             doctorRepository.save(doctor);
             return 1;
         } catch (Exception e) {
+            System.err.println("Error saving doctor: " + e.getMessage());
             return 0;
         }
     }
 
-    // ---------------------- Get All Doctors ----------------------
-
-    @Transactional(readOnly = true)
+    @Transactional
     public List<Doctor> getDoctors() {
-        return doctorRepository.findAll();
+        List<Doctor> doctors = doctorRepository.findAll();
+        doctors.forEach(doc -> doc.getAvailableTimes().size());
+        return doctors;
     }
-
-    // ---------------------- Delete Doctor ----------------------
 
     public int deleteDoctor(long id) {
+        Optional<Doctor> doctor = doctorRepository.findById(id);
+
+        if (!doctor.isPresent()) {
+            return -1;
+        }
         try {
-            Optional<Doctor> doctorOpt = doctorRepository.findById(id);
-            if (doctorOpt.isEmpty()) {
-                return -1;
-            }
-            appointmentRepository.deleteAllByDoctorId(id);
-            doctorRepository.deleteById(id);
+            appointmentRepository.deleteAllByDoctorId(doctor.get().getId());
+            doctorRepository.delete(doctor.get());
             return 1;
         } catch (Exception e) {
+            System.err.println("Error saving doctor: " + e.getMessage());
             return 0;
         }
     }
 
-    // ---------------------- Validate Doctor Login ----------------------
-
     public ResponseEntity<Map<String, String>> validateDoctor(Login login) {
-        Map<String, String> response = new HashMap<>();
-        Optional<Doctor> doctorOpt = doctorRepository.findByEmail(login.getEmail());
+        Map<String, String> map = new HashMap<>();
+        try {
 
-        if (doctorOpt.isEmpty() || !doctorOpt.get().getPassword().equals(login.getPassword())) {
-            response.put("message", "Invalid email or password");
-            return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+            Optional<Doctor> doctorOpt = doctorRepository.findFirstByEmail(login.getEmail());
+            if (doctorOpt.isPresent()) {
+                Doctor doctor = doctorOpt.get();
+                if (doctor.getPassword().equals(login.getPassword())) {
+                    map.put("token", tokenService.generateToken(doctor.getEmail()));
+                    return ResponseEntity.status(HttpStatus.OK).body(map);
+                } else {
+                    map.put("error", "Password does not match");
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(map);
+                }
+            }
+            map.put("error", "invalid email id");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(map);
+
+        } catch (Exception e) {
+            System.out.println("Error: " + e);
+            map.put("error", "Internal Server error");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(map);
         }
-
-        String token = tokenService.generateToken(doctorOpt.get().getId(), "DOCTOR");
-        response.put("token", token);
-        response.put("message", "Login successful");
-        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    // ---------------------- Find Doctor By Name ----------------------
-
-    @Transactional(readOnly = true)
+    @Transactional
     public Map<String, Object> findDoctorByName(String name) {
-        Map<String, Object> result = new HashMap<>();
-        List<Doctor> doctors = doctorRepository.findByNameLike("%" + name + "%");
-        result.put("doctors", doctors);
-        return result;
+        Map<String, Object> map = new HashMap<>();
+        List<Doctor> doctorList = doctorRepository.findByNameLike(name);
+        doctorList.forEach(doc -> doc.getAvailableTimes().size());
+        map.put("doctors", doctorList);
+        return map;
     }
 
-    // ---------------------- Filter Doctors ----------------------
-
-    @Transactional(readOnly = true)
+    @Transactional
     public Map<String, Object> filterDoctorsByNameSpecilityandTime(String name, String specialty, String amOrPm) {
+        Map<String, Object> map = new HashMap<>();
+
         List<Doctor> doctors = doctorRepository.findByNameContainingIgnoreCaseAndSpecialtyIgnoreCase(name, specialty);
-        List<Doctor> filtered = filterDoctorByTime(doctors, amOrPm);
-        return Map.of("doctors", filtered);
+
+        List<Doctor> filteredDoctors = filterDoctorByTime(doctors,amOrPm);
+
+        map.put("doctors", filteredDoctors);
+        return map;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public Map<String, Object> filterDoctorByNameAndTime(String name, String amOrPm) {
-        List<Doctor> doctors = doctorRepository.findByNameLike("%" + name + "%");
-        List<Doctor> filtered = filterDoctorByTime(doctors, amOrPm);
-        return Map.of("doctors", filtered);
+        Map<String, Object> map = new HashMap<>();
+
+        List<Doctor> doctors = doctorRepository.findByNameLike(name);
+        List<Doctor> filteredDoctors = filterDoctorByTime(doctors,amOrPm);
+
+        map.put("doctors", filteredDoctors);
+        return map;
     }
 
-    @Transactional(readOnly = true)
-    public Map<String, Object> filterDoctorByNameAndSpecility(String name, String specialty) {
-        List<Doctor> doctors = doctorRepository.findByNameContainingIgnoreCaseAndSpecialtyIgnoreCase(name, specialty);
-        return Map.of("doctors", doctors);
+    @Transactional
+    public Map<String, Object> filterDoctorByNameAndSpecility(String name, String specilty) {
+        Map<String, Object> map = new HashMap<>();
+        List<Doctor> doctorList = doctorRepository.findByNameContainingIgnoreCaseAndSpecialtyIgnoreCase(name, specilty);
+        doctorList.forEach(doc -> doc.getAvailableTimes().size());
+        map.put("doctors", doctorList);
+        return map;
     }
 
-    @Transactional(readOnly = true)
-    public Map<String, Object> filterDoctorByTimeAndSpecility(String specialty, String amOrPm) {
-        List<Doctor> doctors = doctorRepository.findBySpecialtyIgnoreCase(specialty);
-        List<Doctor> filtered = filterDoctorByTime(doctors, amOrPm);
-        return Map.of("doctors", filtered);
+    @Transactional
+    public Map<String, Object> filterDoctorByTimeAndSpecility(String specilty, String amOrPm) {
+        Map<String, Object> map = new HashMap<>();
+        List<Doctor> doctors = doctorRepository.findBySpecialtyIgnoreCase(specilty);
+        List<Doctor> filteredDoctors = filterDoctorByTime(doctors,amOrPm);
+        map.put("doctors", filteredDoctors);
+        return map;
     }
 
-    @Transactional(readOnly = true)
-    public Map<String, Object> filterDoctorBySpecility(String specialty) {
-        List<Doctor> doctors = doctorRepository.findBySpecialtyIgnoreCase(specialty);
-        return Map.of("doctors", doctors);
+    @Transactional
+    public Map<String, Object> filterDoctorBySpecility(String specilty) {
+        Map<String, Object> map = new HashMap<>();
+        List<Doctor> doctorList = doctorRepository.findBySpecialtyIgnoreCase(specilty);
+        doctorList.forEach(doc -> doc.getAvailableTimes().size());
+        map.put("doctors", doctorList);
+        return map;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public Map<String, Object> filterDoctorsByTime(String amOrPm) {
+        Map<String, Object> map = new HashMap<>();
         List<Doctor> doctors = doctorRepository.findAll();
-        List<Doctor> filtered = filterDoctorByTime(doctors, amOrPm);
-        return Map.of("doctors", filtered);
+        List<Doctor> filteredDoctors = filterDoctorByTime(doctors,amOrPm);
+        map.put("doctors", filteredDoctors);
+        return map;
     }
 
-    // ---------------------- Helper Method ----------------------
 
-    private List<Doctor> filterDoctorByTime(List<Doctor> doctors, String amOrPm) {
-        return doctors.stream().filter(doctor ->
-                doctor.getAvailableTimes().stream().anyMatch(time ->
-                        ("AM".equalsIgnoreCase(amOrPm) && time.isBefore(LocalTime.NOON)) ||
-                        ("PM".equalsIgnoreCase(amOrPm) && !time.isBefore(LocalTime.NOON))
-                )
-        ).collect(Collectors.toList());
-    }
+    public  List<Doctor> filterDoctorByTime(List<Doctor> doctors,String amOrPm)
+    {
+        return doctors.stream()
+        .filter(doctor -> {
+            if (amOrPm == null || amOrPm.isBlank())
+                return true;
+
+            boolean isAM = amOrPm.equalsIgnoreCase("am");
+            return doctor.getAvailableTimes().stream().anyMatch(slot -> {
+                try {
+                    String startHourStr = slot.split("-")[0].split(":")[0];
+                    int hour = Integer.parseInt(startHourStr);
+                    return isAM ? hour < 12 : hour >= 12;
+                } catch (Exception e) {
+                    return false;
+                }
+            });
+        })
+        .collect(Collectors.toList());
+    }   
 }
-
 
 // 1. **Add @Service Annotation**:
 //    - This class should be annotated with `@Service` to indicate that it is a service layer class.
