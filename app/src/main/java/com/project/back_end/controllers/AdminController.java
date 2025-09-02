@@ -1,6 +1,6 @@
 package com.project.back_end.controllers;
 
-import com.project.back_end.model.Admin;
+import com.project.back_end.models.Admin;
 import com.project.back_end.services.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -9,25 +9,35 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("${api.path}admin")
+@RequestMapping("${api.path}" + "admin")
 public class AdminController {
 
     private final Service service;
 
-    // Constructor injection of the Service
     @Autowired
     public AdminController(Service service) {
         this.service = service;
     }
 
-    // ---------------------- Admin Login Endpoint ----------------------
-    @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> adminLogin(@RequestBody Admin admin) {
-        // Delegate login validation to the service layer
+    @PostMapping
+    public ResponseEntity<Map<String, String>> adminLogin(@RequestBody Admin admin)
+    {
         return service.validateAdmin(admin);
     }
-}
 
+
+    @GetMapping("/dashboard/{token}")
+    public String adminDashboard(@PathVariable String token)
+    {
+        Map<String, String> map=service.validateToken(token,"admin").getBody();
+        if(map==null)
+        {
+            return "admin/adminDashboard";
+        }
+        return "redirect:http://localhost:8080/"; 
+        
+    }
+}
 
 // 1. Set Up the Controller Class:
 //    - Annotate the class with `@RestController` to indicate that it's a REST controller, used to handle web requests and return JSON responses.
