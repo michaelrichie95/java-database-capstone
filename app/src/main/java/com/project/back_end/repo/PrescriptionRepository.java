@@ -11,3 +11,4 @@ public interface PrescriptionRepository extends MongoRepository<Prescription, St
     
     List<Prescription> findByAppointmentId(Long appointmentId);
 }
+

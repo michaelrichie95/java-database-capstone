@@ -1,10 +1,9 @@
 package com.project.back_end.models;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "prescriptions")
 public class Prescription {
@@ -12,35 +11,36 @@ public class Prescription {
     @Id
     private String id;
 
-    @NotNull(message = "Patient name cannot be null")
-    @Size(min = 3, max = 100)
-    private String name;
+    @NotNull(message = "Patient name is required")
+    @Size(min = 3, max = 100, message = "Patient name must be between 3 and 100 characters")
+    private String patientName;
 
-    @NotNull(message = "Appointment ID cannot be null")
-    private Long appointment_id;
+    @NotNull(message = "Appointment ID is required")
+    private Long appointmentId;  // Reference to the Appointment entity's ID (Long type)
 
-    @NotNull(message = "Medication cannot be null")
-    @Size(min = 3, max = 100)
+    @NotNull(message = "Medication is required")
+    @Size(min = 3, max = 100, message = "Medication must be between 3 and 100 characters")
     private String medication;
 
-    @NotNull(message = "Dosage cannot be null")
-    @Size(min = 3, max = 20)
+    @NotNull(message = "Dosage is required")
     private String dosage;
 
-    @Size(max = 200)
-    private String doctor_notes;
+    @Size(max = 200, message = "Doctor notes cannot exceed 200 characters")
+    private String doctorNotes;
 
-    public Prescription() {
-    }
-
-    public Prescription(String name, Long appointment_id, String medication, String dosage, String doctor_notes) {
-        this.name = name;
-        this.appointment_id = appointment_id;
+  
+    // Constructors, getters, and setters
+    public Prescription(String patientName, String medication, String dosage, String doctorNotes, Long appointmentId) {
+        this.patientName = patientName;
         this.medication = medication;
         this.dosage = dosage;
-        this.doctor_notes = doctor_notes;
+        this.doctorNotes = doctorNotes;
+        this.appointmentId = appointmentId;
     }
 
+    public Prescription() {}
+
+    // Getters and Setters
     public String getId() {
         return id;
     }
@@ -50,19 +50,11 @@ public class Prescription {
     }
 
     public String getPatientName() {
-        return name;
+        return patientName;
     }
 
-    public void setPatientName(String name) {
-        this.name = name;
-    }
-
-    public Long getAppointmentId() {
-        return appointment_id;
-    }
-
-    public void setAppointmentId(Long appointment_id) {
-        this.appointment_id = appointment_id;
+    public void setPatientName(String patientName) {
+        this.patientName = patientName;
     }
 
     public String getMedication() {
@@ -82,10 +74,18 @@ public class Prescription {
     }
 
     public String getDoctorNotes() {
-        return doctor_notes;
+        return doctorNotes;
     }
 
-    public void setDoctorNotes(String doctor_notes) {
-        this.doctor_notes = doctor_notes;
+    public void setDoctorNotes(String doctorNotes) {
+        this.doctorNotes = doctorNotes;
+    }
+
+    public Long getAppointmentId() {
+        return appointmentId;
+    }
+
+    public void setAppointmentId(Long appointmentId) {
+        this.appointmentId = appointmentId;
     }
 }
