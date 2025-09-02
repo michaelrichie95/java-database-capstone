@@ -6,7 +6,6 @@ import java.time.LocalTime;
 
 public class AppointmentDTO {
 
-    // Core Fields
     private Long id;
     private Long doctorId;
     private String doctorName;
@@ -18,12 +17,10 @@ public class AppointmentDTO {
     private LocalDateTime appointmentTime;
     private int status;
 
-    // Derived Fields
     private LocalDate appointmentDate;
     private LocalTime appointmentTimeOnly;
     private LocalDateTime endTime;
 
-    // Constructor
     public AppointmentDTO(Long id,
                           Long doctorId,
                           String doctorName,
@@ -45,7 +42,6 @@ public class AppointmentDTO {
         this.appointmentTime = appointmentTime;
         this.status = status;
 
-        // Automatically derived fields
         if (appointmentTime != null) {
             this.appointmentDate = appointmentTime.toLocalDate();
             this.appointmentTimeOnly = appointmentTime.toLocalTime();
@@ -53,7 +49,6 @@ public class AppointmentDTO {
         }
     }
 
-    // Getters
     public Long getId() {
         return id;
     }
