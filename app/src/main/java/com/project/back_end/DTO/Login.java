@@ -3,7 +3,7 @@ package com.project.back_end.DTO;
 public class Login {
 
     // Fields
-    private String identifier; // Email for Doctor/Patient, Username for Admin
+    private String email; // Email for Doctor/Patient, Username for Admin
     private String password;   // User's password
 
     // Default Constructor
@@ -11,18 +11,18 @@ public class Login {
     }
 
     // Parameterized Constructor (optional for convenience)
-    public Login(String identifier, String password) {
-        this.identifier = identifier;
+    public Login(String email, String password) {
+        this.email = email;
         this.password = password;
     }
 
-    // Getter and Setter for identifier
-    public String getIdentifier() {
-        return identifier;
+    // Getter and Setter for email
+    public String getemail() {
+        return email;
     }
 
-    public void setIdentifier(String identifier) {
-        this.identifier = identifier;
+    public void setemail(String email) {
+        this.email = email;
     }
 
     // Getter and Setter for password
