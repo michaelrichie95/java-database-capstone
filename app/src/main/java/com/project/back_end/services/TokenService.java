@@ -1,97 +1,90 @@
 package com.project.back_end.services;
 
-import com.project.back_end.model.Admin;
-import com.project.back_end.model.Doctor;
-import com.project.back_end.model.Patient;
-import com.project.back_end.repo.AdminRepository;
-import com.project.back_end.repo.DoctorRepository;
-import com.project.back_end.repo.PatientRepository;
-
+import java.util.Date;
+import javax.crypto.SecretKey;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.Claims;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
-import java.util.Date;
+import com.project.back_end.models.Admin;
+import com.project.back_end.models.Doctor;
+import com.project.back_end.models.Patient;
+import com.project.back_end.repo.AdminRepository;
+import com.project.back_end.repo.DoctorRepository;
+import com.project.back_end.repo.PatientRepository;
 
 @Component
 public class TokenService {
 
+    @Value("${jwt.secret}")
+    private String secret;
+
     private final AdminRepository adminRepository;
     private final DoctorRepository doctorRepository;
     private final PatientRepository patientRepository;
-
-    @Value("${jwt.secret}")
-    private String jwtSecret;
-
-    private static final long EXPIRATION_TIME = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
-
-    public TokenService(AdminRepository adminRepository,
-                        DoctorRepository doctorRepository,
-                        PatientRepository patientRepository) {
-        this.adminRepository = adminRepository;
+    public TokenService(AdminRepository adminRepository,DoctorRepository doctorRepository,PatientRepository patientRepository) {
+        this.adminRepository=adminRepository;
         this.doctorRepository = doctorRepository;
-        this.patientRepository = patientRepository;
+        this.patientRepository=patientRepository;
     }
 
-    // ---------------------- Get Signing Key ----------------------
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    // ---------------------- Generate Token ----------------------
-    public String generateToken(String identifier) {
+    public String generateToken(String email) {
         return Jwts.builder()
-                .setSubject(identifier)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .subject(email)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 7))
+                .signWith(getSigningKey())
                 .compact();
+    }    
+
+    public String extractEmail(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getSubject();
     }
 
-    // ---------------------- Extract Identifier ----------------------
-    public String extractIdentifier(String token) {
+    public boolean validateToken(String token,String user) {
         try {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-            return claims.getSubject();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    // ---------------------- Validate Token ----------------------
-    public boolean validateToken(String token, String userType) {
-        try {
-            String identifier = extractIdentifier(token);
-            if (identifier == null) return false;
-
-            switch (userType.toLowerCase()) {
-                case "admin":
-                    Admin admin = adminRepository.findByUsername(identifier);
-                    return admin != null;
-                case "doctor":
-                    Doctor doctor = doctorRepository.findByEmail(identifier);
-                    return doctor != null;
-                case "patient":
-                    Patient patient = patientRepository.findByEmail(identifier);
-                    return patient != null;
-                default:
-                    return false;
+            String extracted = extractEmail(token);
+            if(user.equals("admin"))
+            {
+                Admin admin =adminRepository.findByUsername(extracted);
+                if(admin!=null)
+                {
+                    return true;
+                }
             }
+            else if(user.equals("doctor"))
+            {
+                Doctor doctor=doctorRepository.findByEmail(extracted);
+                if(doctor!=null)
+                {
+                    return true;
+                }
+            }
+            else if(user.equals("patient"))
+            {
+                Patient patient=patientRepository.findByEmail(extracted);
+                if(patient!=null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         } catch (Exception e) {
-            e.printStackTrace();
             return false;
         }
-    }
+    }  
 }
 
 // 1. **@Component Annotation**
